@@ -4,6 +4,7 @@ const { makeExecutableSchema } = require('@graphql-tools/schema');
 const typeDefs = require('./typeDefs');
 const loginResolvers = require('./resolvers/loginrResolvers.js'); // Corrigido o nome do arquivo e o estilo de camelCase
 const createUserResolvers = require('./resolvers/ceateuserresolvers.js'); // Corrigido o nome do arquivo e o estilo de camelCase
+const transferResolvers  = require( './resolvers/transferResolvers.js')
 const mongoose = require('mongoose');
 require('dotenv').config();
 
@@ -16,7 +17,7 @@ async function startServer() {
 
     const schema = makeExecutableSchema({
       typeDefs,
-      resolvers: [loginResolvers, createUserResolvers],
+      resolvers: [loginResolvers, createUserResolvers , transferResolvers],
     });
 
     app.use('/graphql', graphqlHTTP({

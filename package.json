@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": " node src/index.js"
+    "start": "node src/index.js",
+    "test": "jest --coverage"
   },
   "keywords": [],
   "author": "",
@@ -24,5 +25,15 @@
   },
   "devDependencies": {
     "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "./coverage",
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}"
+    ],
+    "testMatch": [
+      "**/Test/**/*.test.js"
+    ]
   }
 }

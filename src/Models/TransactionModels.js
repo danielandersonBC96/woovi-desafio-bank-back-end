@@ -27,6 +27,9 @@ const transactionSchema = new mongoose.Schema({
   }
 });
 
+// Adicionando um índice composto para os campos sender e recipient
+transactionSchema.index({ sender: 1, recipient: 1 });
+
 const Transaction = mongoose.model('Transaction', transactionSchema);
 
 module.exports = Transaction;

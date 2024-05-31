@@ -12,7 +12,7 @@ const accountSchema = new mongoose.Schema({
         unique: true
     },
     balance: {
-        type: mongoose.Schema.Types.Decimal128, // Certifique-se de que está correto
+        type: Number, // Corrigido para o tipo Number para representar valores decimais
         default: 0.0
     }
 });

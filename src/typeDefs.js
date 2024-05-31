@@ -26,7 +26,7 @@ const typeDefs = gql`
     registerUser(firstName: String!, cpfCnpj: String!, email: String!, password: String!): User
     login(cpfCnpj: String!, password: String!): AuthPayload
     createUserWithAccount(input: CreateUserInput!): User
-    transferMoney(senderId: ID!, receiverId: ID!, value: Float!): TransferResult!
+    transfer(senderId: ID!, receiverId: ID!, value: Float!): TransferResult! # Adicionando a definição da mutação transfer
   }
 
   input CreateUserInput {

@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    passwordHash: {
+    password: { // Corrigido para 'password' em vez de 'passwordHash'
         type: String,
         required: true
     }
@@ -24,12 +24,12 @@ const userSchema = new mongoose.Schema({
 
 // Antes de salvar, criptografa a senha e armazena o hash
 userSchema.pre('save', async function(next) {
-    if (!this.isModified('passwordHash')) {
+    if (!this.isModified('password')) {
         return next();
     }
     try {
-        const hashedPassword = await bcrypt.hash(this.passwordHash, 10);
-        this.passwordHash = hashedPassword;
+        const hashedPassword = await bcrypt.hash(this.password, 10); // Corrigido para 'this.password' em vez de 'this.passwordHash'
+        this.password = hashedPassword; // Corrigido para 'this.password' em vez de 'this.passwordHash'
         next();
     } catch (error) {
         return next(error);

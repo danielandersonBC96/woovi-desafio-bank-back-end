@@ -7,16 +7,10 @@ const createUserWithAccountResolver = {
   Mutation: {
     async createUserWithAccount(parent, { input }, context) {
       try {
-        // Verificar se o usuário já existe com o mesmo email
-        const existingUser = await User.findOne({ email: input.email });
+        // Verificar se o usuário já existe com o mesmo CPF/CNPJ
+        const existingUser = await User.findOne({ cpfCnpj: input.cpfCnpj });
         if (existingUser) {
-          throw new Error('User with this email already exists');
-        }
-
-        // Verificar se o usuário já possui uma conta
-        const existingAccount = await Account.findOne({ userId: input.userId });
-        if (existingAccount) {
-          throw new Error('User already has an account');
+          throw new Error('User with this CPF/CNPJ already exists');
         }
 
         // Criptografar a senha antes de salvar no banco de dados
@@ -30,6 +24,12 @@ const createUserWithAccountResolver = {
           password: hashedPassword,
         });
 
+        // Verificar se o usuário já possui uma conta
+        const existingAccount = await Account.findOne({ userId: newUser.id });
+        if (existingAccount) {
+          throw new Error('User already has an account');
+        }
+
         // Criar uma nova conta para o usuário
         const newAccount = await Account.create({
           userId: newUser.id,
@@ -38,7 +38,7 @@ const createUserWithAccountResolver = {
         });
 
         // Gerar um token de autenticação usando JWT
-        const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET);
+        const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         // Retornar o token, usuário e conta registrados
         return {
@@ -56,3 +56,5 @@ const createUserWithAccountResolver = {
 
 module.exports = createUserWithAccountResolver;
 
+
+module.exports = createUserWithAccountResolver;

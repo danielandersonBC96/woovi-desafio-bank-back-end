@@ -1,48 +1,67 @@
-const Account = require('../Models/accontmodels1.js');
-const Transaction = require('../Models/TransactionModels');
+const jwt = require('jsonwebtoken');
+const User = require('../Models/userModels1');
+const Account = require('../Models/accontModels1');
+const Transaction = require('../Models/transactionModels');
 
-const transferResolvers = {
+const transferResolver = {
   Mutation: {
-    async transferMoney(parent, { senderId, receiverId, value }, context) {
+    async transfer(parent, { input }, context) {
       try {
-        // Encontrar contas
-        const senderAccount = await Account.findById(senderId);
-        const receiverAccount = await Account.findById(receiverId);
+        const { senderAccountNumber, receiverAccountNumber, amount } = input;
 
-        if (!senderAccount || !receiverAccount) {
-          throw new Error('Sender or receiver account not found');
+        // Verificar a autenticação do usuário
+        const token = context.headers.authorization;
+        if (!token) {
+          throw new Error('Authentication required');
         }
 
-        if (senderAccount.balance < value) {
-          throw new Error('Insufficient funds');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const senderAccount = await Account.findOne({ accountNumber: senderAccountNumber });
+
+        if (!senderAccount) {
+          throw new Error('Sender account not found');
         }
 
-        // Atualizar saldos
-        senderAccount.balance -= value;
-        receiverAccount.balance += value;
+        if (senderAccount.userId.toString() !== decoded.userId) {
+          throw new Error('Not authorized to transfer from this account');
+        }
 
-        // Salvar contas
+        // Verificar se o saldo é suficiente
+        if (senderAccount.balance < amount) {
+          throw new Error('Insufficient balance');
+        }
+
+        const receiverAccount = await Account.findOne({ accountNumber: receiverAccountNumber });
+        if (!receiverAccount) {
+          throw new Error('Receiver account not found');
+        }
+
+        // Executar o cálculo do saldo
+        senderAccount.balance -= amount;
+        receiverAccount.balance += amount;
+
+        // Atualizar as contas no banco de dados
         await senderAccount.save();
         await receiverAccount.save();
 
-        // Registrar a transação
-        const transaction = new Transaction({
-          senderId,
-          receiverId,
-          value,
+        // Criar uma transação com status
+        const newTransaction = await Transaction.create({
+          senderAccountNumber,
+          receiverAccountNumber,
+          amount,
+          status: 'completed',
         });
 
-        await transaction.save();
-
+        // Retornar a transação
         return {
-          success: true,
-          message: 'Money transferred successfully',
+          transaction: newTransaction,
         };
       } catch (error) {
-        throw new Error(error.message || 'Failed to transfer money');
+        // Lançar uma exceção indicando que houve uma falha na transferência
+        throw new Error('Failed to complete the transfer');
       }
     },
   },
 };
 
-module.exports = transferResolvers;
+module.exports = transferResolver;

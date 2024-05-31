@@ -42,3 +42,10 @@ O projeto inclui testes automatizados para garantir o bom funcionamento das func
 
 O projeto inclui testes automatizados para garantir o bom funcionamento das funcionalidades. Para executar os testes, utilize o comando npm test.
 
+melhorias Realizadas:
+
+Colocar o CPF/CNPJ como chave primária para verificar a existência do usuário.
+Adicionar uma data de expiração ao token JWT.
+Autenticar o usuário ao realizar uma transferência.
+Executar o cálculo do saldo antes de realizar a transferência.
+Adicionar um status para a transação.

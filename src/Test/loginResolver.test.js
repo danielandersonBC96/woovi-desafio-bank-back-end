@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken');
 const loginResolvers = require('../resolvers/loginrResolvers.js');
 const User = require('../Models/userModels1.js');
-const Account = require('../Models/accontmodels1.js');
+const Account = require('../Models/accontModels1.js');
 
 jest.mock('jsonwebtoken');
 jest.mock('../Models/userModels1.js');
-jest.mock('../Models/accontmodels1.js');
+jest.mock('../Models/accontModels1.js');
 
 describe('loginResolvers', () => {
   describe('Mutation', () => {

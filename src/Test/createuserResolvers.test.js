@@ -1,4 +1,3 @@
-
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const User = require('../Models/userModels1');
@@ -6,9 +5,9 @@ const Account = require('../Models/accontModels1');
 const createUserWithAccountResolver = require('../resolvers/createuserresolvers');
 
 jest.mock('jsonwebtoken');
+jest.mock('bcrypt');
 jest.mock('../Models/userModels1');
 jest.mock('../Models/accontModels1');
-jest.mock('bcrypt');
 
 describe('createUserWithAccountResolver', () => {
   describe('Mutation', () => {
@@ -24,18 +23,20 @@ describe('createUserWithAccountResolver', () => {
           email: 'john@example.com',
           cpfCnpj: '12345678900',
           password: 'password123',
-          userId: 'user123', // Adicionando userId à entrada do usuário
         };
 
         // Mock hashed password
-        const hashedPassword = 'encryptedPassword';
+        const hashedPassword = 'hashedPassword123';
+        bcrypt.hash.mockResolvedValue(hashedPassword);
 
         // Mock user creation
         const mockUser = {
           id: 'user123',
-          ...input,
+          firstName: input.firstName,
+          email: input.email,
+          cpfCnpj: input.cpfCnpj,
+          password: hashedPassword,
         };
-        User.findOne.mockResolvedValue(null);
         User.create.mockResolvedValue(mockUser);
 
         // Mock account creation
@@ -45,38 +46,33 @@ describe('createUserWithAccountResolver', () => {
           accountNumber: '1234567890',
           balance: 0,
         };
-        Account.findOne.mockResolvedValue(null);
         Account.create.mockResolvedValue(mockAccount);
 
-        // Mock bcrypt hash function
-        bcrypt.hash.mockResolvedValue(hashedPassword);
-
         // Mock JWT token generation
-        jwt.sign.mockReturnValue('mockToken');
+        const mockToken = 'mockToken';
+        jwt.sign.mockReturnValue(mockToken);
 
         // Call the resolver
         const result = await createUserWithAccountResolver.Mutation.createUserWithAccount(null, { input }, {});
 
         // Assertions
-        expect(User.findOne).toHaveBeenCalledWith({ email: input.email });
-        expect(User.create).toHaveBeenCalledWith(
-          expect.objectContaining({
-            firstName: input.firstName,
-            email: input.email,
-            cpfCnpj: input.cpfCnpj,
-            password: hashedPassword,
-          })
-        );
-        
-        expect(Account.findOne).toHaveBeenCalledWith({ userId: 'user123' });
+        expect(User.findOne).toHaveBeenCalledWith({ cpfCnpj: input.cpfCnpj });
+        expect(User.create).toHaveBeenCalledWith({
+          firstName: input.firstName,
+          email: input.email,
+          cpfCnpj: input.cpfCnpj,
+          password: hashedPassword, // Verifying that the password is encrypted
+        });
+        // Adjust this part to correctly test the userId passed to Account.findOne
+        expect(Account.findOne).toHaveBeenCalledWith({ userId: mockUser.id });
         expect(Account.create).toHaveBeenCalledWith({
-          userId: 'user123',
+          userId: mockUser.id,
           accountNumber: expect.any(String),
           balance: 0,
         });
-        expect(jwt.sign).toHaveBeenCalledWith({ userId: 'user123' }, process.env.JWT_SECRET);
+        expect(jwt.sign).toHaveBeenCalledWith({ userId: mockUser.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         expect(result).toEqual({
-          token: 'mockToken',
+          token: mockToken,
           user: mockUser,
           account: mockAccount,
         });

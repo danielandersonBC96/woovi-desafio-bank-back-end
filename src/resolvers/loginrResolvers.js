@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../Models/userModels1.js');
-const Account = require('../Models/accontmodels1.js');
+const Account = require('../Models/accontModels1.js');
 
 const loginResolvers = {
   Mutation: {

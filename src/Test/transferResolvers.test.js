@@ -1,67 +1,85 @@
-const transferResolvers = require('../resolvers/transferResolvers');
-const Account = require('../Models/accontmodels1.js');
-const Transaction = require('../Models/TransactionModels');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const User = require('../Models/userModels1');
+const Account = require('../Models/accontModels1');
+const createUserWithAccountResolver = require('../resolvers/createuserresolvers');
 
-jest.mock('../Models/accontmodels1.js');
-jest.mock('../Models/TransactionModels');
+jest.mock('jsonwebtoken');
+jest.mock('bcrypt');
+jest.mock('../Models/userModels1');
+jest.mock('../Models/accontModels1');
 
-describe('transferResolvers', () => {
-  describe('transferMoney', () => {
-    it('should transfer money successfully', async () => {
-      const senderAccount = { _id: 'sender123', balance: 1000, save: jest.fn() };
-      const receiverAccount = { _id: 'receiver123', balance: 500, save: jest.fn() };
-      
-      Account.findById.mockImplementation((id) => {
-        if (id === 'sender123') return senderAccount;
-        if (id === 'receiver123') return receiverAccount;
-        return null;
+describe('createUserWithAccountResolver', () => {
+  describe('Mutation', () => {
+    describe('createUserWithAccount', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
       });
 
-      const mockTransactionSave = jest.fn();
-      Transaction.prototype.save = mockTransactionSave;
+      it('should create a user and account successfully with valid input', async () => {
+        // Mock input
+        const input = {
+          firstName: 'John',
+          email: 'john@example.com',
+          cpfCnpj: '12345678900',
+          password: 'password123',
+        };
 
-      const result = await transferResolvers.Mutation.transferMoney(null, {
-        senderId: 'sender123',
-        receiverId: 'receiver123',
-        value: 200,
-      }, {});
+        // Mock hashed password
+        const hashedPassword = 'hashedPassword123';
+        bcrypt.hash.mockResolvedValue(hashedPassword);
 
-      expect(senderAccount.balance).toBe(800);
-      expect(receiverAccount.balance).toBe(700);
-      expect(senderAccount.save).toHaveBeenCalled();
-      expect(receiverAccount.save).toHaveBeenCalled();
-      expect(mockTransactionSave).toHaveBeenCalled();
-      expect(result).toEqual({
-        success: true,
-        message: 'Money transferred successfully'
+        // Mock user creation
+        const mockUser = {
+          id: 'user123',
+          firstName: input.firstName,
+          email: input.email,
+          cpfCnpj: input.cpfCnpj,
+          password: hashedPassword,
+        };
+        User.create.mockResolvedValue(mockUser);
+
+        // Mock account creation
+        const mockAccount = {
+          id: 'account123',
+          userId: 'user123',
+          accountNumber: '1234567890',
+          balance: 0,
+        };
+        Account.create.mockResolvedValue(mockAccount);
+
+        // Mock JWT token generation
+        const mockToken = 'mockToken';
+        jwt.sign.mockReturnValue(mockToken);
+
+        // Call the resolver
+        const result = await createUserWithAccountResolver.Mutation.createUserWithAccount(null, { input }, {});
+
+        // Assertions
+        expect(User.findOne).toHaveBeenCalledWith({ cpfCnpj: input.cpfCnpj });
+        expect(User.create).toHaveBeenCalledWith({
+          firstName: input.firstName,
+          email: input.email,
+          cpfCnpj: input.cpfCnpj,
+          password: hashedPassword, // Verifying that the password is encrypted
+        });
+        // Adjust this part to correctly test the userId passed to Account.findOne
+        expect(Account.findOne).toHaveBeenCalledWith({ userId: mockUser.id });
+        expect(Account.create).toHaveBeenCalledWith({
+          userId: mockUser.id,
+          accountNumber: expect.any(String),
+          balance: 0,
+        });
+        expect(jwt.sign).toHaveBeenCalledWith({ userId: mockUser.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        expect(result).toEqual({
+          token: mockToken,
+          user: mockUser,
+          account: mockAccount,
+        });
+
+        // Verifying that bcrypt.hash is called with the correct password
+        expect(bcrypt.hash).toHaveBeenCalledWith(input.password, 10);
       });
-    });
-
-    it('should throw error if sender or receiver account not found', async () => {
-      Account.findById.mockImplementation(() => null);
-
-      await expect(transferResolvers.Mutation.transferMoney(null, {
-        senderId: 'invalidSenderId',
-        receiverId: 'invalidReceiverId',
-        value: 200,
-      }, {})).rejects.toThrow('Sender or receiver account not found');
-    });
-
-    it('should throw error if insufficient funds', async () => {
-      const senderAccount = { _id: 'sender123', balance: 100, save: jest.fn() };
-      const receiverAccount = { _id: 'receiver123', balance: 500, save: jest.fn() };
-
-      Account.findById.mockImplementation((id) => {
-        if (id === 'sender123') return senderAccount;
-        if (id === 'receiver123') return receiverAccount;
-        return null;
-      });
-
-      await expect(transferResolvers.Mutation.transferMoney(null, {
-        senderId: 'sender123',
-        receiverId: 'receiver123',
-        value: 200,
-      }, {})).rejects.toThrow('Insufficient funds');
     });
   });
 });

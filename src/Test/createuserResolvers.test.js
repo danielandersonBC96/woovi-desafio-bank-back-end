@@ -1,116 +1,88 @@
-const { User } = require('../Models/userModels1.js');
-const { Account } = require('../Models/accontmodels1.js');
-const { loginresolvers } = require('../resolvers/loginResolvers');
 
-jest.mock('../Models/userModels1.js');
-jest.mock('../Models/accontmodels1.js');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const User = require('../Models/userModels1');
+const Account = require('../Models/accontModels1');
+const createUserWithAccountResolver = require('../resolvers/createuserresolvers');
 
-describe('loginResolvers', () => {
+jest.mock('jsonwebtoken');
+jest.mock('../Models/userModels1');
+jest.mock('../Models/accontModels1');
+jest.mock('bcrypt');
+
+describe('createUserWithAccountResolver', () => {
   describe('Mutation', () => {
     describe('createUserWithAccount', () => {
+      afterEach(() => {
+        jest.clearAllMocks();
+      });
+
       it('should create a user and account successfully with valid input', async () => {
+        // Mock input
         const input = {
           firstName: 'John',
           email: 'john@example.com',
           cpfCnpj: '12345678900',
           password: 'password123',
+          userId: 'user123', // Adicionando userId à entrada do usuário
         };
 
+        // Mock hashed password
+        const hashedPassword = 'encryptedPassword';
+
+        // Mock user creation
         const mockUser = {
           id: 'user123',
           ...input,
-          save: jest.fn().mockResolvedValue(true),
         };
+        User.findOne.mockResolvedValue(null);
+        User.create.mockResolvedValue(mockUser);
 
+        // Mock account creation
         const mockAccount = {
           id: 'account123',
           userId: 'user123',
           accountNumber: '1234567890',
           balance: 0,
-          save: jest.fn().mockResolvedValue(true),
         };
+        Account.findOne.mockResolvedValue(null);
+        Account.create.mockResolvedValue(mockAccount);
 
-        User.findOne = jest.fn().mockResolvedValue(null);
-        User.create = jest.fn().mockResolvedValue(mockUser);
-        Account.findOne = jest.fn().mockResolvedValue(null);
-        Account.create = jest.fn().mockResolvedValue(mockAccount);
+        // Mock bcrypt hash function
+        bcrypt.hash.mockResolvedValue(hashedPassword);
 
-        const result = await loginresolvers.Mutation.createUserWithAccount(null, { input }, {});
+        // Mock JWT token generation
+        jwt.sign.mockReturnValue('mockToken');
 
+        // Call the resolver
+        const result = await createUserWithAccountResolver.Mutation.createUserWithAccount(null, { input }, {});
+
+        // Assertions
         expect(User.findOne).toHaveBeenCalledWith({ email: input.email });
-        expect(User.create).toHaveBeenCalledWith(input);
+        expect(User.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            firstName: input.firstName,
+            email: input.email,
+            cpfCnpj: input.cpfCnpj,
+            password: hashedPassword,
+          })
+        );
+        
         expect(Account.findOne).toHaveBeenCalledWith({ userId: 'user123' });
         expect(Account.create).toHaveBeenCalledWith({
           userId: 'user123',
           accountNumber: expect.any(String),
           balance: 0,
         });
-        expect(mockUser.save).toHaveBeenCalled();
-        expect(result).toEqual(mockUser);
-      });
+        expect(jwt.sign).toHaveBeenCalledWith({ userId: 'user123' }, process.env.JWT_SECRET);
+        expect(result).toEqual({
+          token: 'mockToken',
+          user: mockUser,
+          account: mockAccount,
+        });
 
-      it('should throw error if user with the same email already exists', async () => {
-        const input = {
-          firstName: 'John',
-          email: 'john@example.com',
-          cpfCnpj: '12345678900',
-          password: 'password123',
-        };
-
-        const mockUser = {
-          id: 'user123',
-          ...input,
-        };
-
-        User.findOne = jest.fn().mockResolvedValue(mockUser);
-
-        await expect(loginresolvers.Mutation.createUserWithAccount(null, { input }, {}))
-          .rejects
-          .toThrow('User with this email already exists');
-      });
-
-      it('should throw error if account already exists for the user', async () => {
-        const input = {
-          firstName: 'John',
-          email: 'john@example.com',
-          cpfCnpj: '12345678900',
-          password: 'password123',
-        };
-
-        const mockUser = {
-          id: 'user123',
-          ...input,
-          save: jest.fn().mockResolvedValue(true),
-        };
-
-        const mockAccount = {
-          id: 'account123',
-          userId: 'user123',
-        };
-
-        User.findOne = jest.fn().mockResolvedValue(null);
-        User.create = jest.fn().mockResolvedValue(mockUser);
-        Account.findOne = jest.fn().mockResolvedValue(mockAccount);
-
-        await expect(loginresolvers.Mutation.createUserWithAccount(null, { input }, {}))
-          .rejects
-          .toThrow('User already has an account');
-      });
-
-      it('should throw error if creation of user or account fails', async () => {
-        const input = {
-          firstName: 'John',
-          email: 'john@example.com',
-          cpfCnpj: '12345678900',
-          password: 'password123',
-        };
-
-        User.findOne = jest.fn().mockResolvedValue(null);
-        User.create = jest.fn().mockRejectedValue(new Error('Failed to create user'));
-
-        await expect(loginresolvers.Mutation.createUserWithAccount(null, { input }, {}))
-          .rejects
-          .toThrow('Failed to create user with account');
+        // Verifying that bcrypt.hash is called with the correct password
+        expect(bcrypt.hash).toHaveBeenCalledWith(input.password, 10);
       });
     });
   });

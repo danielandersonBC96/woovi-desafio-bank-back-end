@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
-const { loginResolvers } = require('../resolvers/loginResolvers');
-const { User } = require('../Models/userModels1.js');
-const { Account } = require('../Models/accontmodels1.js');
+const loginResolvers = require('../resolvers/loginrResolvers.js');
+const User = require('../Models/userModels1.js');
+const Account = require('../Models/accontmodels1.js');
 
 jest.mock('jsonwebtoken');
 jest.mock('../Models/userModels1.js');
@@ -60,7 +60,6 @@ describe('loginResolvers', () => {
         const mockUser = {
           id: 'user123',
           ...mockInput,
-          save: jest.fn(),
         };
 
         const mockAccount = {
@@ -68,7 +67,6 @@ describe('loginResolvers', () => {
           userId: mockUser.id,
           accountNumber: '1234567890',
           balance: 0,
-          save: jest.fn(),
         };
 
         User.findOne.mockResolvedValue(null);
@@ -79,14 +77,21 @@ describe('loginResolvers', () => {
         const result = await loginResolvers.Mutation.createUserWithAccount(null, { input: mockInput }, {});
 
         expect(User.findOne).toHaveBeenCalledWith({ email: mockInput.email });
-        expect(User.create).toHaveBeenCalledWith(mockInput);
+
+        const expectedUser = {
+          firstName: mockInput.firstName,
+          email: mockInput.email,
+          cpfCnpj: mockInput.cpfCnpj,
+          password: mockInput.password,
+        };
+        expect(User.create).toHaveBeenCalledWith(expect.objectContaining(expectedUser));
+
         expect(Account.findOne).toHaveBeenCalledWith({ userId: mockUser.id });
         expect(Account.create).toHaveBeenCalledWith({
           userId: mockUser.id,
           accountNumber: expect.any(String),
           balance: 0,
         });
-        expect(mockUser.save).toHaveBeenCalled();
         expect(result).toEqual(mockUser);
       });
 
@@ -121,7 +126,6 @@ describe('loginResolvers', () => {
         const mockUser = {
           id: 'user123',
           ...mockInput,
-          save: jest.fn(),
         };
 
         const mockExistingAccount = {

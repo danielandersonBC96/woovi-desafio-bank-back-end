@@ -1,11 +1,11 @@
-const { Account } = require('../Models/accontmodels1.js');
-const { Transaction } = require('../Models/TransactionModels.js');
+const Account = require('../Models/accontmodels1.js');
+const Transaction = require('../Models/TransactionModels');
 
 const transferResolvers = {
   Mutation: {
     async transferMoney(parent, { senderId, receiverId, value }, context) {
       try {
-        // Encontrar as contas do remetente e do destinatário
+        // Encontrar contas
         const senderAccount = await Account.findById(senderId);
         const receiverAccount = await Account.findById(receiverId);
 
@@ -13,36 +13,36 @@ const transferResolvers = {
           throw new Error('Sender or receiver account not found');
         }
 
-        // Verificar se o saldo do remetente é suficiente para a transferência
         if (senderAccount.balance < value) {
           throw new Error('Insufficient funds');
         }
 
-        // Atualizar o saldo do remetente e do destinatário
+        // Atualizar saldos
         senderAccount.balance -= value;
         receiverAccount.balance += value;
 
-        // Salvar as alterações
+        // Salvar contas
         await senderAccount.save();
         await receiverAccount.save();
 
-        // Salvar a transação no banco de dados
+        // Registrar a transação
         const transaction = new Transaction({
           senderId,
           receiverId,
-          value
+          value,
         });
+
         await transaction.save();
 
         return {
           success: true,
-          message: 'Money transferred successfully'
+          message: 'Money transferred successfully',
         };
       } catch (error) {
-        throw new Error('Failed to transfer money');
+        throw new Error(error.message || 'Failed to transfer money');
       }
-    }
-  }
+    },
+  },
 };
 
 module.exports = transferResolvers;

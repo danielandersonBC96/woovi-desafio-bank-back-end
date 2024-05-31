@@ -1,5 +1,5 @@
 
-﻿BankProject
+
 
 BankProject
 
@@ -40,5 +40,5 @@ Testes
 
 O projeto inclui testes automatizados para garantir o bom funcionamento das funcionalidades. Para executar os testes, utilize o comando npm test.
 
-O projeto inclui testes automatizados para garantir o bom funcionamento das funcionalidades. Para executar os testes, utilize o comando npm test.
+
 

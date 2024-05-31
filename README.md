@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿BankProject
+=======
+BankProject
+>>>>>>> 9e0783a6ed13280f40c7473582c3363a37fc4ca4
 Descrição
 O BankProject é uma aplicação de exemplo que utiliza Node.js, Express, GraphQL e MongoDB Atlas para fornecer uma API GraphQL para gerenciamento de usuários e contas bancárias. Este projeto serve como um exemplo de como configurar um servidor GraphQL com autenticação e conexão a um banco de dados MongoDB hospedado no MongoDB Atlas.
 
@@ -33,4 +37,8 @@ resolvers/: Contém os resolvers GraphQL para diferentes funcionalidades.
 typeDefs.js: Arquivo que define os tipos e operações GraphQL.
 test/: Pasta que contém os arquivos de teste para os resolvers.
 Testes
+<<<<<<< HEAD
 O projeto inclui testes automatizados para garantir o bom funcionamento das funcionalidades. Para executar os testes, utilize o comando npm test.
+=======
+O projeto inclui testes automatizados para garantir o bom funcionamento das funcionalidades. Para executar os testes, utilize o comando npm test.
+>>>>>>> 9e0783a6ed13280f40c7473582c3363a37fc4ca4
